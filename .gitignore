@@ -1,0 +1,5 @@
+.vscode/
+build/
+include/
+lib64/
+lib/
