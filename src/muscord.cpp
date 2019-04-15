@@ -40,6 +40,23 @@ namespace muscord {
 
         this->m_rpc = new MuscordRpc(this->m_config->application_id, this->m_discord_events);
         this->m_rpc->log = this->m_handlers->log;
+       
+        if (this->m_config->disconnect_on_idle) {
+            this->m_idle_check_token = new CancellationToken();
+            this->m_idle_check_future = std::async(std::launch::async, [this]{
+                        while (true) {
+                            std::this_thread::sleep_for(std::chrono::seconds(1));
+                            if (this->m_idle_check_token->cancel) break;
+                            if (!this->m_state) continue;
+                            if (this->m_state->status == PlayerStatus::PLAYING) continue;
+                            
+                            int64_t difference = GET_CURRENT_MS() - this->m_state->time;
+                            
+                            if (this->m_rpc->connected && difference >= this->m_config->idle_timeout_ms)
+                                this->m_rpc->disconnect();
+                        }
+                    });
+        }
     }
 
     void Muscord::run()
@@ -49,7 +66,13 @@ namespace muscord {
 
     void Muscord::stop()
     {
-        this->m_rpc->disconnect();
+        if (this->m_rpc->connected)
+            this->m_rpc->disconnect();
+
+        if (this->m_config->disconnect_on_idle) {
+            this->m_idle_check_token->cancel = true;
+            this->m_idle_check_future.wait();
+        }
     }
     
     void Muscord::on_errored(int error_code, const char* message)
@@ -66,7 +89,6 @@ namespace muscord {
 
     void Muscord::on_state_change(PlayerState* state)
     {
-
         std::string status;
 
         switch (state->status) {

@@ -27,11 +27,12 @@ namespace muscord {
 
     typedef struct MuscordConfig {
         std::string application_id;
+        bool disconnect_on_idle;
+        int64_t idle_timeout_ms;
         std::vector<std::string> ignored_players;
-        bool auto_reconnect;
-
-        MuscordConfig() : auto_reconnect(true)
-        {};
+        
+        MuscordConfig() : disconnect_on_idle(true), idle_timeout_ms(30000)
+        {}
     } MuscordConfig;
 
     class Muscord {
@@ -46,6 +47,8 @@ namespace muscord {
             MuscordRpc* m_rpc;
             Playerctl* m_player;
             DiscordEventHandlers* m_discord_events;
+            std::future<void> m_idle_check_future;
+            CancellationToken* m_idle_check_token;
             void on_ready(const DiscordUser* user);
             void on_disconnected(int error_code, const char* message);
             void on_errored(int error_code, const char* message);

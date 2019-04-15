@@ -1,12 +1,22 @@
 #include "muscord.h"
 #include <iostream>
+#include <map>
+
+using namespace muscord;
 
 int main()
 {
-    using namespace muscord;
+    std::map<std::string, std::string> player_icons = {
+        {"spotify", "spotify_large"},
+        {"Lollypop", "lollypop_large_mini"},
+        {"default", "unknown"}
+    };
+    
     MuscordConfig* config = new MuscordConfig();
     config->application_id = "385845405193207840";
-    
+    config->disconnect_on_idle = true;
+    config->idle_timeout_ms = 30000;
+
     MuscordEvents* events = new MuscordEvents();
     events->log = [&](LogMessage* log) {
         if (log->severity == Severity::TRACE) return;
@@ -43,11 +53,13 @@ int main()
                 presence->smallImageKey = "stop_white_small";
                 break;
         }
+        
+        auto large_image_key = player_icons.find(player_name);
 
-        if (state->player_name == "spotify")
-            presence->largeImageKey = "spotify_large";
+        if (large_image_key != player_icons.end())
+            presence->largeImageKey = large_image_key->second.c_str();
         else
-            presence->largeImageKey = "unknown";
+            presence->largeImageKey = player_icons["default"].c_str();
 
         presence->smallImageText = album.c_str();
         presence->largeImageText = player_name.c_str();

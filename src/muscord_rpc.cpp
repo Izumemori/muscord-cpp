@@ -12,18 +12,21 @@ namespace muscord
 {
     MuscordRpc::MuscordRpc(const std::string application_id, DiscordEventHandlers* handlers)
     {
+        this->connected = false;
         this->m_application_id = application_id;
         this->m_handlers = handlers;
     }
     
     MuscordRpc::~MuscordRpc()
     {
-        this->stop_callback_checks();
-        Discord_Shutdown();
+        if (this->connected)
+            this->disconnect();
+        
     }
 
     void MuscordRpc::connect()
     {   
+        this->connected = true;
         if (this->m_callback_token)
         {
             this->m_callback_token->cancel = true;
@@ -36,24 +39,28 @@ namespace muscord
         this->log(&conn_message);
         Discord_Initialize(this->m_application_id.c_str(), this->m_handlers, 1, "");
         
-        LogMessage finish_conn_message("Connected", Severity::INFO);
         this->start_callback_checks();
-        this->log(&finish_conn_message);
     }
 
     void MuscordRpc::disconnect()
     {
+        this->connected = false;
         LogMessage disconn_message("Disconnecting...", Severity::INFO);
         this->log(&disconn_message);
-        Discord_Shutdown();
         this->m_callback_token->cancel = true;
         this->m_callback_future.wait();
+        this->stop_callback_checks();
+        this->clear_presence();
+        Discord_Shutdown();
         LogMessage disconn_finish_message("Disconnected", Severity::INFO);
         this->log(&disconn_finish_message);
     }
 
     void MuscordRpc::update_presence(const std::function<void (DiscordRichPresence*)>& f)
     {
+        if (!this->connected)
+            this->connect();
+
         auto rich_presence = new DiscordRichPresence();
         f(rich_presence);
         Discord_UpdatePresence(rich_presence);
@@ -82,8 +89,6 @@ namespace muscord
 
     void MuscordRpc::stop_callback_checks()
     {
-        LogMessage shutting_down("Shutting down", Severity::INFO);
-        this->log(&shutting_down);
         this->m_callback_token->cancel = true;
         this->m_callback_future.wait();
     }

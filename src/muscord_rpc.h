@@ -16,6 +16,7 @@ namespace muscord
             void disconnect();
             void update_presence(const std::function<void (DiscordRichPresence*)>& func);
             void clear_presence();
+            bool connected;
             std::function<void(LogMessage*)> log;
             ~MuscordRpc();
         private:

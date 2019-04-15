@@ -1,7 +1,7 @@
 # Muscord <!-- omit in toc -->
 
 A linux tool to display what you're listening to via Discord's Rich Presence utilizing the offical [SDK](https://github.com/discordapp/discord-rpc) and [playerctl](https://github.com/acrisci/playerctl/).  
-It gathers music and player information from DBus/mpris2.
+It gathers music and player information from D-BUS/mpris2.
 
 - [Features](#features)
 - [Installation](#installation)
@@ -12,8 +12,9 @@ It gathers music and player information from DBus/mpris2.
 
 ## Features
 
-Still a WIP
-
+- Automatic discovery of media players through D-BUS
+- Disconnecting after idleing for 30 seconds
+  
 ## Installation
 
 ### Prerequisites
