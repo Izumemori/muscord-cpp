@@ -28,7 +28,8 @@ namespace muscord
             playerctl_player_manager_manage_player(this->m_manager, player);
             this->init_managed_player(player);
         }
-        
+       
+
         this->m_time_updater_cancel_token = new CancellationToken();
         this->m_time_updater = std::async(std::launch::async, [this]{
                     while (true)
@@ -37,6 +38,9 @@ namespace muscord
                         g_object_get(this->m_manager, "players", &players, NULL);
                         
                         auto l = g_list_first(players);
+                        
+                        if (!l) continue;
+                        
                         auto top_player = PLAYERCTL_PLAYER(l->data);
 
                         this->send_track_info(top_player);
@@ -45,6 +49,10 @@ namespace muscord
                         if (this->m_time_updater_cancel_token->cancel) break;
                     }
                 });
+        
+        g_signal_connect(PLAYERCTL_PLAYER_MANAGER(this->m_manager), "name-appeared", G_CALLBACK(Playerctl::on_name_appeared), this);
+        g_signal_connect(PLAYERCTL_PLAYER_MANAGER(this->m_manager), "player-appeared", G_CALLBACK(Playerctl::on_player_appeared), this);
+        g_signal_connect(PLAYERCTL_PLAYER_MANAGER(this->m_manager), "player-vanished", G_CALLBACK(Playerctl::on_player_vanished), this);
 
         this->m_main_loop = g_main_loop_new(NULL, FALSE);
         this->m_main_loop_future = std::async(std::launch::async, [this]{
@@ -66,8 +74,62 @@ namespace muscord
 
     void Playerctl::on_play(PlayerctlPlayer* player, gpointer* data)
     {
-        Playerctl* playerClass = reinterpret_cast<Playerctl*>(data); 
-        playerctl_player_manager_move_player_to_top(playerClass->m_manager, player);
+        Playerctl* player_class = reinterpret_cast<Playerctl*>(data);
+        
+        if (!player_class) return;
+
+        playerctl_player_manager_move_player_to_top(player_class->m_manager, player);
+    }
+
+    void Playerctl::on_name_appeared(PlayerctlPlayerManager* manager, PlayerctlPlayerName* name, gpointer* data)
+    {
+        GError* error = nullptr;
+        Playerctl* player_class = reinterpret_cast<Playerctl*>(data);
+        
+        if (!player_class) return;
+        if (name->name) {
+            LogMessage new_player_name("New Player appeared: " + std::string(name->name), Severity::INFO);
+            player_class->m_events->log(&new_player_name);
+        }
+
+
+        PlayerctlPlayer* player = playerctl_player_new_from_name(name, &error);
+        log_error(player_class, error);
+
+        playerctl_player_manager_manage_player(manager, player);
+
+        g_object_unref(player);
+    }
+
+    void Playerctl::on_player_appeared(PlayerctlPlayerManager* manager, PlayerctlPlayer* player, gpointer* data)
+    {
+        GError* error = nullptr;
+        Playerctl* player_class = reinterpret_cast<Playerctl*>(data);
+
+        if (!player_class) return;
+         
+        gchar* name = NULL;
+        g_object_get(player, "player_name", &name, NULL);
+        
+        if (name) {
+            LogMessage new_player_setup("Set up new player: " + std::string(name), Severity::INFO);
+            player_class->m_events->log(&new_player_setup);
+        }
+        
+        player_class->init_managed_player(player);
+    }
+
+    void Playerctl::on_player_vanished(PlayerctlPlayerManager* manager, PlayerctlPlayer* player, gpointer* data)
+    {
+        Playerctl* player_class = reinterpret_cast<Playerctl*>(data);
+
+        gchar* name = NULL;
+        g_object_get(player, "player_name", &name, NULL);
+        
+        if (!name) return;
+        
+        LogMessage new_player_setup("Player vanished: " + std::string(name), Severity::INFO);
+        player_class->m_events->log(&new_player_setup);
     }
 
     void Playerctl::send_track_info(PlayerctlPlayer* player)
@@ -116,10 +178,10 @@ namespace muscord
             break;
         }
 
+        
         gchar* name = NULL;
         g_object_get(player, "player_name", &name, NULL);
         state->player_name = name;
-        
         this->m_events->state_changed(state); 
         delete state;
     }
@@ -128,6 +190,6 @@ namespace muscord
     {
         if (error == NULL) return;
         playerClass->m_events->error(error->message);
-        delete error;
+        g_clear_error(&error);
     }
 }

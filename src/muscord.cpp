@@ -62,7 +62,6 @@ namespace muscord {
     {
         LogMessage disconnect(message, Severity::INFO);
         this->m_handlers->log(&disconnect);
-        // TODO: reconnect logic?
     }
 
     void Muscord::on_state_change(PlayerState* state)
@@ -82,7 +81,7 @@ namespace muscord {
                 break;
         }
 
-        std::string message = "[" + status + "] " + state->artist + " - " + state->title;
+        std::string message = "[" + state->player_name + "] [" + status + "] " + state->artist + " - " + state->title;
         LogMessage song(message, Severity::INFO);
         
         MuscordState* mus_state = new MuscordState(state);
@@ -116,6 +115,7 @@ namespace muscord {
         PlayerctlEvents* events = new PlayerctlEvents();
         events->error = [this](std::string message){ this->on_errored(0, message.c_str()); };
         events->state_changed = [this](PlayerState* state){ this->on_state_change(state); };
+        events->log = [this](LogMessage* message){ this->m_handlers->log(message); };
         this->m_player = new Playerctl(events);
     }
 
