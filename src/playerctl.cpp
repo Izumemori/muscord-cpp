@@ -4,25 +4,18 @@
 #include <thread>
 #include <chrono>
 
-namespace muscord::playerctl
+namespace muscord
 {
-    Playerctl::Playerctl(PlayerctlEvents* events)
-    {
-        this->m_events = events;
+    Playerctl::Playerctl(PlayerctlEvents* events) {
         GError* error = NULL;
-
+        this->m_events = events;
         this->m_manager = playerctl_player_manager_new(&error);
-        
-        if (error != NULL)
-            this->m_events->error(error->message);
+        this->log_error(this, error);
         
         GList* players = playerctl_list_players(&error);
-        
-        if (error != NULL)
-            this->m_events->error(error->message);
+        this->log_error(this, error);
 
         players = g_list_copy(players);
-        
         GList* l = NULL;
 
         for (l = players; l != NULL; l = l->next)
@@ -30,14 +23,13 @@ namespace muscord::playerctl
             PlayerctlPlayerName* name = (PlayerctlPlayerName*)l->data;
             PlayerctlPlayer* player = playerctl_player_new_from_name(name, &error);
 
-            if (error != NULL)
-                this->m_events->error(error->message);
-
+            this->log_error(this, error);
+            
             playerctl_player_manager_manage_player(this->m_manager, player);
             this->init_managed_player(player);
         }
         
-        this->m_time_updater_cancel_token = new cancellation_token();
+        this->m_time_updater_cancel_token = new CancellationToken();
         this->m_time_updater = std::async(std::launch::async, [this]{
                     while (true)
                     {
@@ -47,7 +39,7 @@ namespace muscord::playerctl
                         auto l = g_list_first(players);
                         auto top_player = PLAYERCTL_PLAYER(l->data);
 
-                        on_time_change(top_player, (gpointer*)this);
+                        this->send_track_info(top_player);
                         std::this_thread::sleep_for(std::chrono::seconds(1));
                         
                         if (this->m_time_updater_cancel_token->cancel) break;
@@ -61,11 +53,6 @@ namespace muscord::playerctl
     }
 
     Playerctl::~Playerctl()
-    {
-        this->cleanup();
-    }
-
-    void Playerctl::cleanup()
     {
         this->m_time_updater_cancel_token->cancel = true;
         g_main_loop_quit(this->m_main_loop);
@@ -83,46 +70,48 @@ namespace muscord::playerctl
         playerctl_player_manager_move_player_to_top(playerClass->m_manager, player);
     }
 
-    void Playerctl::on_time_change(PlayerctlPlayer* player, gpointer* data)
+    void Playerctl::send_track_info(PlayerctlPlayer* player)
     {
         GError* error = NULL;
 
-        Playerctl* playerClass = (Playerctl*)data;
-        
-        player_state* state = new player_state();
+        PlayerState* state = new PlayerState();
+
         state->artist = playerctl_player_get_artist(player, &error);
-        log_error(playerClass, error);
+        log_error(this, error);
+        
         state->title = playerctl_player_get_title(player, &error);
-        log_error(playerClass, error);
+        log_error(this, error);
+        
         state->album = playerctl_player_get_album(player, &error);
-        log_error(playerClass, error);
+        log_error(this, error);
+        
         gint64 position = 0;        
         g_object_get(player, "position", &position, NULL);
         state->position = position;
-
+        
         PlayerctlPlaybackStatus status = PLAYERCTL_PLAYBACK_STATUS_STOPPED;
         g_object_get(player, "playback-status", &status, NULL);
-
-        gchar* name = NULL;
-        g_object_get(player, "player_name", &name, NULL);
-        state->player_name = name;
 
         switch (status)
         {
             case PLAYERCTL_PLAYBACK_STATUS_STOPPED:
-                state->status = player_status::STOPPED;
+                state->status = PlayerStatus::STOPPED;
             break;
 
             case PLAYERCTL_PLAYBACK_STATUS_PLAYING:
-                state->status = player_status::PLAYING;
+                state->status = PlayerStatus::PLAYING;
             break;
 
             case PLAYERCTL_PLAYBACK_STATUS_PAUSED:
-                state->status = player_status::PAUSED;
+                state->status = PlayerStatus::PAUSED;
             break;
         }
+
+        gchar* name = NULL;
+        g_object_get(player, "player_name", &name, NULL);
+        state->player_name = name;
         
-        playerClass->m_events->state_changed(state); 
+        this->m_events->state_changed(state); 
         delete state;
     }
 

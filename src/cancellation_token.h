@@ -2,7 +2,7 @@
 
 namespace muscord
 {
-    struct cancellation_token {
+    typedef struct CancellationToken {
         bool cancel = false;
-    } typedef cancellation_token;
+    } CancellationToken;
 }

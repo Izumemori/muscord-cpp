@@ -1,52 +1,145 @@
 #include "muscord.h"
-#include "cancellation_token.h"
 #include "../include/discord_rpc.h"
-#include <functional>
-#include <iostream>
-#include <future>
-#include <thread>
+#include "muscord_rpc.h"
+#include "playerctl.h"
 #include <chrono>
 
-namespace muscord 
-{
-    Muscord::Muscord(const char* application_id, DiscordEventHandlers* handlers)
+#define GET_CURRENT_MS() std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now().time_since_epoch()).count() 
+
+namespace muscord {    
+    std::function<void(const DiscordUser*)> ready_func;
+    void ready_proxy(const DiscordUser* user) { if (ready_func) ready_func(user); }
+
+    std::function<void(int, const char*)> disconnected_func;
+    void disconnected_proxy(int error_code, const char* message) { if (disconnected_func) disconnected_func(error_code, message); }
+
+    std::function<void(int, const char*)> errored_func;
+    void errored_proxy(int error_code, const char* message) { if (errored_func) errored_func(error_code, message); }
+   
+    Muscord::Muscord(MuscordConfig* config, MuscordEvents* handlers)
     {
-        Discord_Initialize(application_id, handlers, 1, "");
-        this->callback_token = new cancellation_token();
-        this->start_callback_checks();
+        this->m_player = nullptr;
+        this->m_rpc = nullptr;
+        this->m_state = nullptr;
+
+        this->m_config = config;
+        this->m_handlers = handlers;
+        this->m_discord_events = new DiscordEventHandlers();
+        ready_func = [this](const DiscordUser* user) {
+            this->on_ready(user);
+        };
+        disconnected_func = [this](int error_code, const char* message) {
+            this->on_disconnected(error_code, message);
+        };
+        errored_func = [this](int error_code, const char* message) {
+            this->on_errored(error_code, message);
+        };
+        this->m_discord_events->ready = ready_proxy;
+        this->m_discord_events->disconnected = disconnected_proxy;
+        this->m_discord_events->errored = errored_proxy;
+
+        this->m_rpc = new MuscordRpc(this->m_config->application_id, this->m_discord_events);
+        this->m_rpc->log = this->m_handlers->log;
     }
 
-    Muscord::~Muscord()
+    void Muscord::run()
     {
-        this->stop_callback_checks();
-        Discord_Shutdown();
+        this->m_rpc->connect();
     }
 
-    void Muscord::update_presence(const std::function<void (DiscordRichPresence*)>& f)
+    void Muscord::stop()
     {
-        auto rich_presence = new DiscordRichPresence();
-        f(rich_presence);
-        Discord_UpdatePresence(rich_presence);
-        delete rich_presence;
+        this->m_rpc->disconnect();
+    }
+    
+    void Muscord::on_errored(int error_code, const char* message)
+    {
+        LogMessage error(message, Severity::ERROR);
+        this->m_handlers->log(&error);
+    }
+    
+    void Muscord::on_disconnected(int error_code, const char* message)
+    {
+        LogMessage disconnect(message, Severity::INFO);
+        this->m_handlers->log(&disconnect);
+        // TODO: reconnect logic?
     }
 
-    void Muscord::start_callback_checks()
+    void Muscord::on_state_change(PlayerState* state)
     {
-        this->callback_future = std::async(std::launch::async, [this]{
-            while(true)
-            {
-                Discord_RunCallbacks();
-                this->log("Ran callbacks");
-                std::this_thread::sleep_for(std::chrono::seconds(1));
-                if (this->callback_token->cancel) break;
-            }
-        });
+
+        std::string status;
+
+        switch (state->status) {
+            case PlayerStatus::PAUSED:
+                status = "PAUSED";
+                break;
+            case PlayerStatus::PLAYING:
+                status = "PLAYING";
+                break;
+            case PlayerStatus::STOPPED:
+                status = "STOPPED";
+                break;
+        }
+
+        std::string message = "[" + status + "] " + state->artist + " - " + state->title;
+        LogMessage song(message, Severity::INFO);
+        
+        MuscordState* mus_state = new MuscordState(state);
+        
+        if (this->m_state && this->m_state->equals(mus_state))
+        {
+            delete mus_state;
+            return;
+        }
+        else if (this->m_state)
+        {
+            delete this->m_state;
+            this->m_state = nullptr;
+        }
+            
+        this->m_state = mus_state;
+        this->m_handlers->log(&song);
+        this->m_rpc->update_presence([&](DiscordRichPresence* presence) { 
+                this->m_handlers->play_state_change(this->m_state, this->m_state->status, presence);
+            });
     }
 
-    void Muscord::stop_callback_checks()
+    void Muscord::on_ready(const DiscordUser* user)
     {
-        this->log("Shutting down...");
-        this->callback_token->cancel = true;
-        this->callback_future.wait();
+        if (!this->m_player) this->create_new_playerctl();
+        this->m_handlers->ready(user);
     }
+    
+    void Muscord::create_new_playerctl()
+    {
+        PlayerctlEvents* events = new PlayerctlEvents();
+        events->error = [this](std::string message){ this->on_errored(0, message.c_str()); };
+        events->state_changed = [this](PlayerState* state){ this->on_state_change(state); };
+        this->m_player = new Playerctl(events);
+    }
+
+    bool MuscordState::equals(MuscordState* other)
+    {
+        return (this->artist == other->artist &&
+                this->title == other->title &&
+                this->album == other->album &&
+                this->player_name == other->player_name && 
+                this->status == other->status);
+    }
+
+    MuscordState::MuscordState()
+    {
+       this->time = GET_CURRENT_MS(); 
+    }
+
+    MuscordState::MuscordState(PlayerState* state) : MuscordState::MuscordState()
+    {
+        this->artist = state->artist;
+        this->title = state->title;
+        this->album = state->album;
+        this->player_name = state->player_name;
+        this->status = state->status;
+    }
+
 }

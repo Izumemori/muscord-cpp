@@ -7,44 +7,42 @@ extern "C" {
     #include <playerctl/playerctl.h>
 }
 
-namespace muscord::playerctl {
-    enum player_status {
+namespace muscord {
+    typedef enum PlayerStatus {
         PAUSED,
         PLAYING,
         STOPPED
-    } typedef player_status;
+    } PlayerStatus;
     
-    struct player_state {
+    typedef struct PlayerState {
         std::string artist;
         std::string title;
         std::string album;
         std::string player_name;
         uint64_t position;
         uint64_t total;
-        player_status status;
-    } typedef player_state;
+        PlayerStatus status;
+    } PlayerState;
     
-    struct PlayerctlEvents {    
-        void (*error)(const char* message);
-        void (*state_changed)(player_state* state);
-    } typedef PlayerctlEvents;
+    typedef struct PlayerctlEvents {    
+        std::function<void(std::string)> error;
+        std::function<void(PlayerState*)> state_changed;
+    } PlayerctlEvents;
     
     class Playerctl {
         public:
             Playerctl(PlayerctlEvents* events);
             ~Playerctl();
         private:
-            void init_managed_player(PlayerctlPlayer* player);
-            void cleanup();
             PlayerctlPlayerManager* m_manager;
             GMainLoop* m_main_loop;
             std::future<void> m_time_updater;
             std::future<void> m_main_loop_future;
             PlayerctlEvents* m_events;
-            cancellation_token* m_time_updater_cancel_token;
+            CancellationToken* m_time_updater_cancel_token;
+            void init_managed_player(PlayerctlPlayer* player);
+            void send_track_info(PlayerctlPlayer*);
             static void on_play(PlayerctlPlayer*, gpointer*);
-            static void on_metadata(PlayerctlPlayer*, gpointer*);
-            static void on_time_change(PlayerctlPlayer*, gpointer*);
             static void log_error(Playerctl*, GError*);
     };
 }    

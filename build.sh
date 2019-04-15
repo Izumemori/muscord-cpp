@@ -19,4 +19,4 @@ mkdir -p build/
 PLAYERCTL_FLAGS=`pkg-config --cflags playerctl`
 PLAYERCTL_LIBS=`pkg-config --libs playerctl`
 
-g++ -DDEBUG -g $GLIB_FLAGS $PLAYERCTL_FLAGS src/main.cpp src/muscord.cpp src/playerctl.cpp $GLIB_LIBS $PLAYERCTL_LIBS -Llib64/ -ldiscord-rpc -lpthread -o build/muscord
+g++ -DDEBUG -g $GLIB_FLAGS $PLAYERCTL_FLAGS src/*.cpp $GLIB_LIBS $PLAYERCTL_LIBS -Llib64/ -ldiscord-rpc -lpthread -o build/muscord
