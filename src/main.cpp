@@ -17,10 +17,20 @@ int main()
     events->ready = [&](const DiscordUser* user) {
         std::cout << "Logged in as: " << user->username << std::endl;
     };
+   
+    /* work around scope limitations */
+    std::string artist;
+    std::string title;
+    std::string album;
+    std::string player_name;
+    events->play_state_change = [&](MuscordState* state, PlayerStatus status, DiscordRichPresence* presence) {
+        artist = "by " + state->artist;
+        title = state->title;
+        album = state->album;
+        player_name = state->player_name;
 
-    events->play_state_change = [](MuscordState* state, PlayerStatus status, DiscordRichPresence* presence) {
-        presence->state = ("by " + state->artist).c_str();
-        presence->details = state->title.c_str();
+        presence->state = artist.c_str();
+        presence->details = title.c_str();
 
         switch (status) {
             case PlayerStatus::PLAYING:
@@ -39,8 +49,8 @@ int main()
         else
             presence->largeImageKey = "unknown";
 
-        presence->smallImageText = state->album.c_str();
-        presence->largeImageText = state->player_name.c_str();
+        presence->smallImageText = album.c_str();
+        presence->largeImageText = player_name.c_str();
     };
 
     Muscord muscord(config, events);
