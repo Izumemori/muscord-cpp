@@ -76,13 +76,22 @@ namespace muscord
 
         PlayerState* state = new PlayerState();
 
-        state->artist = playerctl_player_get_artist(player, &error);
+        const char* temp = playerctl_player_get_artist(player, &error);
+        if (!temp) return; 
+        state->artist = temp;
+        delete temp;
         log_error(this, error);
         
-        state->title = playerctl_player_get_title(player, &error);
+        temp = playerctl_player_get_title(player, &error);
+        if (!temp) return;
+        state->title = temp;
+        delete temp;
         log_error(this, error);
         
-        state->album = playerctl_player_get_album(player, &error);
+        temp = playerctl_player_get_album(player, &error);
+        if (!temp) return;
+        state->album = temp;
+        delete temp;
         log_error(this, error);
         
         gint64 position = 0;        
