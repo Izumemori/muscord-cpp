@@ -30,19 +30,12 @@ int main()
         std::cout << "Logged in as: " << user->username << std::endl;
     };
    
-    /* work around scope limitations */
-    std::string artist;
-    std::string title;
-    std::string album;
-    std::string player_name;
+    std::string artist; // work around scope
     events->play_state_change = [&](const MuscordState& state, PlayerStatus status, DiscordRichPresence* presence) {
         artist = "by " + state.artist;
-        title = state.title;
-        album = state.album;
-        player_name = state.player_name;
-
+        
         presence->state = artist.c_str();
-        presence->details = title.c_str();
+        presence->details = state.title.c_str();
 
         switch (status) {
             case PlayerStatus::PLAYING:
@@ -56,15 +49,15 @@ int main()
                 break;
         }
         
-        auto large_image_key = player_icons.find(player_name);
+        auto large_image_key = player_icons.find(state.player_name);
 
         if (large_image_key != player_icons.end())
             presence->largeImageKey = large_image_key->second.c_str();
         else
             presence->largeImageKey = player_icons["default"].c_str();
 
-        presence->smallImageText = album.c_str();
-        presence->largeImageText = player_name.c_str();
+        presence->smallImageText = state.album.c_str();
+        presence->largeImageText = state.player_name.c_str();
     };
 
     Muscord muscord(config, events);
