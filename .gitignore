@@ -1,5 +1,5 @@
 .vscode/
 build/
 include/
-lib64/
-lib/
+compile_commands.json
+bin/

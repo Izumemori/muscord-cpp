@@ -3,12 +3,13 @@
 #include <iostream>
 #include <thread>
 #include <chrono>
+#include <memory>
 
 namespace muscord
 {
-    Playerctl::Playerctl(PlayerctlEvents* events) {
+    Playerctl::Playerctl(std::unique_ptr<PlayerctlEvents>& events) {
         GError* error = NULL;
-        this->m_events = events;
+        this->m_events = std::move(events);
         this->m_manager = playerctl_player_manager_new(&error);
         this->log_error(this, error);
         
@@ -20,7 +21,7 @@ namespace muscord
 
         for (l = players; l != NULL; l = l->next)
         {
-            PlayerctlPlayerName* name = (PlayerctlPlayerName*)l->data;
+            PlayerctlPlayerName* name = reinterpret_cast<PlayerctlPlayerName*>(l->data);
             PlayerctlPlayer* player = playerctl_player_new_from_name(name, &error);
 
             this->log_error(this, error);
@@ -30,7 +31,7 @@ namespace muscord
         }
        
 
-        this->m_time_updater_cancel_token = new CancellationToken();
+        this->m_time_updater_cancel_token = std::make_unique<CancellationToken>();
         this->m_time_updater = std::async(std::launch::async, [this]{
                     while (true)
                     {
@@ -64,6 +65,7 @@ namespace muscord
     {
         this->m_time_updater_cancel_token->cancel = true;
         g_main_loop_quit(this->m_main_loop);
+        g_main_loop_unref(this->m_main_loop);
         this->m_time_updater.wait();
     }
 
@@ -89,7 +91,7 @@ namespace muscord
         if (!player_class) return;
         if (name->name) {
             LogMessage new_player_name("New Player appeared: " + std::string(name->name), Severity::INFO);
-            player_class->m_events->log(&new_player_name);
+            player_class->m_events->log(new_player_name);
         }
 
 
@@ -113,7 +115,7 @@ namespace muscord
         
         if (name) {
             LogMessage new_player_setup("Set up new player: " + std::string(name), Severity::INFO);
-            player_class->m_events->log(&new_player_setup);
+            player_class->m_events->log(new_player_setup);
         }
         
         player_class->init_managed_player(player);
@@ -129,36 +131,36 @@ namespace muscord
         if (!name) return;
         
         LogMessage new_player_setup("Player vanished: " + std::string(name), Severity::INFO);
-        player_class->m_events->log(&new_player_setup);
+        player_class->m_events->log(new_player_setup);
     }
 
     void Playerctl::send_track_info(PlayerctlPlayer* player)
     {
         GError* error = NULL;
 
-        PlayerState* state = new PlayerState();
+        PlayerState state;
 
         const char* temp = playerctl_player_get_artist(player, &error);
         if (!temp) return; 
-        state->artist = temp;
+        state.artist = temp;
         delete temp;
         log_error(this, error);
         
         temp = playerctl_player_get_title(player, &error);
         if (!temp) return;
-        state->title = temp;
+        state.title = temp;
         delete temp;
         log_error(this, error);
         
         temp = playerctl_player_get_album(player, &error);
         if (!temp) return;
-        state->album = temp;
+        state.album = temp;
         delete temp;
         log_error(this, error);
         
         gint64 position = 0;        
         g_object_get(player, "position", &position, NULL);
-        state->position = position;
+        state.position = position;
         
         PlayerctlPlaybackStatus status = PLAYERCTL_PLAYBACK_STATUS_STOPPED;
         g_object_get(player, "playback-status", &status, NULL);
@@ -166,30 +168,29 @@ namespace muscord
         switch (status)
         {
             case PLAYERCTL_PLAYBACK_STATUS_STOPPED:
-                state->status = PlayerStatus::STOPPED;
+                state.status = PlayerStatus::STOPPED;
             break;
 
             case PLAYERCTL_PLAYBACK_STATUS_PLAYING:
-                state->status = PlayerStatus::PLAYING;
+                state.status = PlayerStatus::PLAYING;
             break;
 
             case PLAYERCTL_PLAYBACK_STATUS_PAUSED:
-                state->status = PlayerStatus::PAUSED;
+                state.status = PlayerStatus::PAUSED;
             break;
         }
-
         
         gchar* name = NULL;
         g_object_get(player, "player_name", &name, NULL);
-        state->player_name = name;
-        this->m_events->state_changed(state); 
-        delete state;
+        state.player_name = name;
+        this->m_events->state_changed(state);
     }
 
     void Playerctl::log_error(Playerctl* playerClass, GError* error)
     {
         if (error == NULL) return;
-        playerClass->m_events->error(error->message);
+        std::string error_message(error->message);
+        playerClass->m_events->error(error_message);
         g_clear_error(&error);
     }
 }

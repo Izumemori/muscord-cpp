@@ -1,16 +1,16 @@
 #include "muscord.h"
 #include "cancellation_token.h"
-#include "../include/discord_rpc.h"
-#include "../include/discord_register.h"
+#include "../discord-rpc/include/discord_rpc.h"
 #include <functional>
 #include <iostream>
 #include <future>
 #include <thread>
 #include <chrono>
+#include <memory>
 
 namespace muscord 
 {
-    MuscordRpc::MuscordRpc(const std::string application_id, DiscordEventHandlers* handlers)
+    MuscordRpc::MuscordRpc(std::string application_id, std::shared_ptr<DiscordEventHandlers>& handlers)
     {
         this->connected = false;
         this->m_application_id = application_id;
@@ -21,7 +21,6 @@ namespace muscord
     {
         if (this->connected)
             this->disconnect();
-        
     }
 
     void MuscordRpc::connect()
@@ -31,13 +30,13 @@ namespace muscord
         {
             this->m_callback_token->cancel = true;
             this->m_callback_future.wait();
+            this->m_callback_token.reset(new CancellationToken());
         }
-        
-        this->m_callback_token = new CancellationToken();
+        else this->m_callback_token = std::make_unique<CancellationToken>();
         
         LogMessage conn_message("Connecting...", Severity::INFO);
-        this->log(&conn_message);
-        Discord_Initialize(this->m_application_id.c_str(), this->m_handlers, 1, "");
+        this->log(conn_message);
+        Discord_Initialize(this->m_application_id.c_str(), this->m_handlers.get(), 1, "");
         
         this->start_callback_checks();
     }
@@ -46,14 +45,12 @@ namespace muscord
     {
         this->connected = false;
         LogMessage disconn_message("Disconnecting...", Severity::INFO);
-        this->log(&disconn_message);
-        this->m_callback_token->cancel = true;
-        this->m_callback_future.wait();
+        this->log(disconn_message);
         this->stop_callback_checks();
         this->clear_presence();
         Discord_Shutdown();
         LogMessage disconn_finish_message("Disconnected", Severity::INFO);
-        this->log(&disconn_finish_message);
+        this->log(disconn_finish_message);
     }
 
     void MuscordRpc::update_presence(const std::function<void (DiscordRichPresence*)>& f)
@@ -80,7 +77,7 @@ namespace muscord
             while(true)
             {
                 Discord_RunCallbacks();
-                this->log(&ran_callbacks);
+                this->log(ran_callbacks);
                 std::this_thread::sleep_for(std::chrono::seconds(1));
                 if (this->m_callback_token->cancel) break;
             }

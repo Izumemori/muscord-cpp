@@ -1,22 +1,24 @@
 #!/bin/bash
 
-INSTALL_PATH=`pwd`
+DEBUG=$@
 
-echo "Building discord-rpc..."
+DEBUG_OPTION=""
 
-cd discord-rpc/
+if [ "$DEBUG" == "-d" ]; then
+    DEBUG_OPTION="-DDEBUG=ON"
+fi
+
+echo "Trying to create directories..."
 mkdir -p build
+mkdir -p bin
+
 cd build/
-cmake .. -DCMAKE_INSTALL_PREFIX="$INSTALL_PATH"
-cmake --build . --config Release --target install
 
-cd "$INSTALL_PATH"
+echo "Building..."
+cmake .. -DCMAKE_INSTALL_PREFIX=. $DEBUG_OPTION
+make -j4
+cd ..
 
-echo "Building muscord..."
+cp build/bin/muscord ./bin/
 
-mkdir -p build/
-
-PLAYERCTL_FLAGS=`pkg-config --cflags playerctl`
-PLAYERCTL_LIBS=`pkg-config --libs playerctl`
-
-g++ -DDEBUG -g $GLIB_FLAGS $PLAYERCTL_FLAGS src/*.cpp $GLIB_LIBS $PLAYERCTL_LIBS -Llib64/ -ldiscord-rpc -lpthread -o build/muscord
+echo "Executable can be found in 'bin'."

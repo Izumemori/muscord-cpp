@@ -3,6 +3,7 @@
 #include "cancellation_token.h"
 #include "log_message.h"
 #include <future>
+#include <memory>
 
 extern "C" {
     #include <playerctl/playerctl.h>
@@ -26,22 +27,22 @@ namespace muscord {
     } PlayerState;
     
     typedef struct PlayerctlEvents {    
-        std::function<void(std::string)> error;
-        std::function<void(PlayerState*)> state_changed;
-        std::function<void(LogMessage*)> log;
+        std::function<void(std::string&)> error;
+        std::function<void(PlayerState&)> state_changed;
+        std::function<void(LogMessage&)> log;
     } PlayerctlEvents;
     
     class Playerctl {
         public:
-            Playerctl(PlayerctlEvents* events);
+            Playerctl(std::unique_ptr<PlayerctlEvents>& events);
             ~Playerctl();
         private:
             PlayerctlPlayerManager* m_manager;
             GMainLoop* m_main_loop;
             std::future<void> m_time_updater;
             std::future<void> m_main_loop_future;
-            PlayerctlEvents* m_events;
-            CancellationToken* m_time_updater_cancel_token;
+            std::unique_ptr<PlayerctlEvents> m_events;
+            std::unique_ptr<CancellationToken> m_time_updater_cancel_token;
             void init_managed_player(PlayerctlPlayer* player);
             void send_track_info(PlayerctlPlayer* player);
             static void on_play(PlayerctlPlayer* player, gpointer* data);

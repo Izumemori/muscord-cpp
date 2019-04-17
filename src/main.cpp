@@ -1,6 +1,8 @@
 #include "muscord.h"
+#include "log_message.h"
 #include <iostream>
 #include <map>
+#include <memory>
 
 using namespace muscord;
 
@@ -12,16 +14,16 @@ int main()
         {"default", "unknown"}
     };
     
-    MuscordConfig* config = new MuscordConfig();
+    std::unique_ptr<MuscordConfig> config = std::make_unique<MuscordConfig>();
     config->application_id = "385845405193207840";
     config->disconnect_on_idle = true;
     config->idle_timeout_ms = 30000;
 
-    MuscordEvents* events = new MuscordEvents();
-    events->log = [&](LogMessage* log) {
-        if (log->severity == Severity::TRACE) return;
+    std::unique_ptr<MuscordEvents> events = std::make_unique<MuscordEvents>();
+    events->log = [&](LogMessage& log) {
+        if (log.severity == Severity::TRACE) return;
         
-        std::cout << log->message << std::endl;
+        std::cout << log.message << std::endl;
     };
 
     events->ready = [&](const DiscordUser* user) {
@@ -33,11 +35,11 @@ int main()
     std::string title;
     std::string album;
     std::string player_name;
-    events->play_state_change = [&](MuscordState* state, PlayerStatus status, DiscordRichPresence* presence) {
-        artist = "by " + state->artist;
-        title = state->title;
-        album = state->album;
-        player_name = state->player_name;
+    events->play_state_change = [&](MuscordState& state, PlayerStatus status, DiscordRichPresence* presence) {
+        artist = "by " + state.artist;
+        title = state.title;
+        album = state.album;
+        player_name = state.player_name;
 
         presence->state = artist.c_str();
         presence->details = title.c_str();
