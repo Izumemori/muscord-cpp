@@ -89,6 +89,8 @@ namespace muscord {
 
     void Muscord::on_state_change(const PlayerState& state)
     {
+        if (!this->m_rpc->connected && state.status != PlayerStatus::PLAYING) return; // Don't bother with anything that's not playing when already disconnected
+
         std::string status;
 
         switch (state.status) {
@@ -102,7 +104,7 @@ namespace muscord {
                 status = "STOPPED";
                 break;
         }
-
+        
         std::string message = "[" + state.player_name + "] [" + status + "] " + state.artist + " - " + state.title;
         LogMessage song(message, Severity::INFO);
         
