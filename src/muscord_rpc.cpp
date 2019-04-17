@@ -10,7 +10,7 @@
 
 namespace muscord 
 {
-    MuscordRpc::MuscordRpc(std::string application_id, std::shared_ptr<DiscordEventHandlers>& handlers)
+    MuscordRpc::MuscordRpc(std::string& application_id, std::shared_ptr<DiscordEventHandlers>& handlers)
     {
         this->connected = false;
         this->m_application_id = application_id;
@@ -58,10 +58,9 @@ namespace muscord
         if (!this->connected)
             this->connect();
 
-        auto rich_presence = new DiscordRichPresence();
-        f(rich_presence);
-        Discord_UpdatePresence(rich_presence);
-        delete rich_presence;
+        std::unique_ptr<DiscordRichPresence> rich_presence = std::make_unique<DiscordRichPresence>();
+        f(rich_presence.get());
+        Discord_UpdatePresence(rich_presence.get());
     }
 
     void MuscordRpc::clear_presence()

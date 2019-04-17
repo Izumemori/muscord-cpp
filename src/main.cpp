@@ -20,7 +20,7 @@ int main()
     config->idle_timeout_ms = 30000;
 
     std::unique_ptr<MuscordEvents> events = std::make_unique<MuscordEvents>();
-    events->log = [&](LogMessage& log) {
+    events->log = [&](const LogMessage& log) {
         if (log.severity == Severity::TRACE) return;
         
         std::cout << log.message << std::endl;
@@ -35,7 +35,7 @@ int main()
     std::string title;
     std::string album;
     std::string player_name;
-    events->play_state_change = [&](MuscordState& state, PlayerStatus status, DiscordRichPresence* presence) {
+    events->play_state_change = [&](const MuscordState& state, PlayerStatus status, DiscordRichPresence* presence) {
         artist = "by " + state.artist;
         title = state.title;
         album = state.album;

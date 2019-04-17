@@ -15,14 +15,14 @@ namespace muscord {
         uint64_t time;
 
         MuscordState();
-        MuscordState(PlayerState& state);
+        MuscordState(const PlayerState& state);
 
-        bool equals(MuscordState& other);
+        bool equals(const MuscordState& other);
     } MuscordState;
 
     typedef struct MuscordEvents {
-        std::function<void(LogMessage&)> log;
-        std::function<void(MuscordState&, PlayerStatus, DiscordRichPresence*)> play_state_change;
+        std::function<void(const LogMessage&)> log;
+        std::function<void(const MuscordState&, PlayerStatus, DiscordRichPresence*)> play_state_change;
         std::function<void(const DiscordUser*)> ready; 
     } MuscordEvents;
 
@@ -53,7 +53,7 @@ namespace muscord {
             void on_ready(const DiscordUser* user);
             void on_disconnected(int error_code, const char* message);
             void on_errored(int error_code, const char* message);
-            void on_state_change(PlayerState& state);
+            void on_state_change(const PlayerState& state);
             void create_new_playerctl();
     };
 }

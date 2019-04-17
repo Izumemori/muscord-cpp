@@ -27,9 +27,9 @@ namespace muscord {
     } PlayerState;
     
     typedef struct PlayerctlEvents {    
-        std::function<void(std::string&)> error;
-        std::function<void(PlayerState&)> state_changed;
-        std::function<void(LogMessage&)> log;
+        std::function<void(const std::string&)> error;
+        std::function<void(const PlayerState&)> state_changed;
+        std::function<void(const LogMessage&)> log;
     } PlayerctlEvents;
     
     class Playerctl {

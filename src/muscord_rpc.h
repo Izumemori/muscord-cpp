@@ -12,13 +12,13 @@ namespace muscord
 {
     class MuscordRpc {
         public:
-            MuscordRpc(std::string application_id, std::shared_ptr<DiscordEventHandlers>& handlers);
+            MuscordRpc(std::string& application_id, std::shared_ptr<DiscordEventHandlers>& handlers);
             void connect();
             void disconnect();
             void update_presence(const std::function<void (DiscordRichPresence*)>& func);
             void clear_presence();
             bool connected;
-            std::function<void(LogMessage&)> log;
+            std::function<void(const LogMessage&)> log;
             ~MuscordRpc();
         private:
             std::string m_application_id;

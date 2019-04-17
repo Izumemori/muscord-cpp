@@ -87,7 +87,7 @@ namespace muscord {
         this->m_handlers->log(disconnect);
     }
 
-    void Muscord::on_state_change(PlayerState& state)
+    void Muscord::on_state_change(const PlayerState& state)
     {
         std::string status;
 
@@ -116,7 +116,7 @@ namespace muscord {
 
         this->m_state.reset(mus_state);
         this->m_handlers->log(song);
-        this->m_rpc->update_presence([&](DiscordRichPresence* presence) { 
+        this->m_rpc->update_presence([this](DiscordRichPresence* presence) { 
                 this->m_handlers->play_state_change(*this->m_state, this->m_state->status, presence);
             });
     }
@@ -131,12 +131,12 @@ namespace muscord {
     {
         std::unique_ptr<PlayerctlEvents> events = std::make_unique<PlayerctlEvents>();
         events->error = [this](std::string message){ this->on_errored(0, message.c_str()); };
-        events->state_changed = [this](PlayerState& state){ this->on_state_change(state); };
-        events->log = [this](LogMessage& message){ this->m_handlers->log(message); };
+        events->state_changed = [this](const PlayerState& state){ this->on_state_change(state); };
+        events->log = [this](const LogMessage& message){ this->m_handlers->log(message); };
         this->m_player = std::make_unique<Playerctl>(events);
     }
 
-    bool MuscordState::equals(MuscordState& other)
+    bool MuscordState::equals(const MuscordState& other)
     {
         return (this->artist == other.artist &&
                 this->title == other.title &&
@@ -150,7 +150,7 @@ namespace muscord {
        this->time = get_current_ms(); 
     }
 
-    MuscordState::MuscordState(PlayerState& state) : MuscordState::MuscordState()
+    MuscordState::MuscordState(const PlayerState& state) : MuscordState::MuscordState()
     {
         this->artist = state.artist;
         this->title = state.title;
