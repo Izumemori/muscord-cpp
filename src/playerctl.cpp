@@ -11,10 +11,10 @@ namespace muscord
         GError* error = NULL;
         this->m_events = std::move(events);
         this->m_manager = playerctl_player_manager_new(&error);
-        this->log_error(this, error);
+        this->log_error(error);
         
         GList* players = playerctl_list_players(&error);
-        this->log_error(this, error);
+        this->log_error(error);
 
         players = g_list_copy(players);
         GList* l = NULL;
@@ -24,7 +24,7 @@ namespace muscord
             PlayerctlPlayerName* name = reinterpret_cast<PlayerctlPlayerName*>(l->data);
             PlayerctlPlayer* player = playerctl_player_new_from_name(name, &error);
 
-            this->log_error(this, error);
+            this->log_error(error);
             
             playerctl_player_manager_manage_player(this->m_manager, player);
             this->init_managed_player(player);
@@ -96,7 +96,7 @@ namespace muscord
 
 
         PlayerctlPlayer* player = playerctl_player_new_from_name(name, &error);
-        log_error(player_class, error);
+        player_class->log_error(error);
 
         playerctl_player_manager_manage_player(manager, player);
 
@@ -140,23 +140,25 @@ namespace muscord
 
         PlayerState state;
 
-        const char* temp = playerctl_player_get_artist(player, &error);
+        const char* temp;
+
+        temp = playerctl_player_get_artist(player, &error);
         if (!temp) return; 
         state.artist = temp;
         delete temp;
-        log_error(this, error);
+        this->log_error(error);
         
         temp = playerctl_player_get_title(player, &error);
         if (!temp) return;
         state.title = temp;
         delete temp;
-        log_error(this, error);
+        this->log_error(error);
         
         temp = playerctl_player_get_album(player, &error);
         if (!temp) return;
         state.album = temp;
         delete temp;
-        log_error(this, error);
+        this->log_error(error);
         
         gint64 position = 0;        
         g_object_get(player, "position", &position, NULL);
@@ -186,11 +188,11 @@ namespace muscord
         this->m_events->state_changed(state);
     }
 
-    void Playerctl::log_error(Playerctl* playerClass, GError* error)
+    void Playerctl::log_error(GError* error)
     {
         if (error == NULL) return;
         std::string error_message(error->message);
-        playerClass->m_events->error(error_message);
+        this->m_events->error(error_message);
         g_clear_error(&error);
     }
 }

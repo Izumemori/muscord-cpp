@@ -45,8 +45,8 @@ namespace muscord {
             std::unique_ptr<CancellationToken> m_time_updater_cancel_token;
             void init_managed_player(PlayerctlPlayer* player);
             void send_track_info(PlayerctlPlayer* player);
+            void log_error(GError*);
             static void on_play(PlayerctlPlayer* player, gpointer* data);
-            static void log_error(Playerctl*, GError*);
             static void on_name_appeared(PlayerctlPlayerManager* manager, PlayerctlPlayerName* name, gpointer* data);
             static void on_player_appeared(PlayerctlPlayerManager* manager, PlayerctlPlayer* player, gpointer* data);
             static void on_player_vanished(PlayerctlPlayerManager* manager, PlayerctlPlayer* player, gpointer* data);
