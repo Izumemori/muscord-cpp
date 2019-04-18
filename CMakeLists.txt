@@ -20,16 +20,20 @@ file(GLOB_RECURSE ALL_SOURCE_FILES
 
 message("-- Looking for discord-rpc source files")
 
-find_file (DISCORD_RPC_LIB_TEST NAMES discord-rpc HINTS ${CMAKE_CURRENT_SOURCE_DIR} CMAKE_FIND_ROOT_PATH_BOTH)
+find_file (DISCORD_RPC_LIB_TEST NAMES discord-rpc/CMakeLists.txt HINTS ${CMAKE_CURRENT_SOURCE_DIR} CMAKE_FIND_ROOT_PATH_BOTH) # look for CMakeLists.txt
 
 if(NOT DISCORD_RPC_LIB_TEST)
     message("-- Looking for discord-rpc source files - not found")
     execute_process(COMMAND git submodule update --init -- discord-rpc WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
+else()
+    message("-- Looking for discord-rpc source files - found")
 endif()
 
-message("-- Looking for discord-rpc source files - found")
+
+find_file (DISCORD_RPC_LIB NAMES discord-rpc HINTS ${CMAKE_CURRENT_SOURCE_DIR} CMAKE_FIND_ROOT_PATH_BOTH)
+
 set(BUILD_EXAMPLES OFF CACHE BOOL "Build example apps" FORCE)
-add_subdirectory(${DISCORD_RPC_LIB_TEST})
+add_subdirectory(${DISCORD_RPC_LIB})
 
 #
 # yaml-cpp config
@@ -37,18 +41,21 @@ add_subdirectory(${DISCORD_RPC_LIB_TEST})
 
 message("-- Looking for yaml-cpp source files")
 
-find_file (YAML_LIB_TEST NAMES yaml-cpp HINTS ${CMAKE_CURRENT_SOURCE_DIR} CMAKE_FIND_ROOT_PATH_BOTH)
+find_file (YAML_LIB_TEST NAMES yaml-cpp/CMakeLists.txt HINTS ${CMAKE_CURRENT_SOURCE_DIR} CMAKE_FIND_ROOT_PATH_BOTH) # look for CMakeLists.txt
 
 if(NOT YAML_LIB_TEST)
     message("-- Looking for yaml-cpp source files - not found")
-    execute_process(COMMAND git submodule update --init -- discord-rpc WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
+    execute_process(COMMAND git submodule update --init -- yaml-cpp WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
+else()
+    message("-- Looking for yaml-cpp source files - found")
 endif()
 
-message("-- Looking for yaml-cpp source files - found")
+find_file (YAML_LIB NAMES yaml-cpp HINTS ${CMAKE_CURRENT_SOURCE_DIR} CMAKE_FIND_ROOT_PATH_BOTH)
+
 set(YAML_CPP_BUILD_TESTS OFF CACHE BOOL "Enable testing" FORCE)
 set(YAML_CPP_BUILD_TOOLS OFF CACHE BOOL "Enable parse tools" FORCE)
 set(YAML_CPP_INSTALL OFF CACHE BOOL "Enable generation of install target" FORCE)
-add_subdirectory(${YAML_LIB_TEST})
+add_subdirectory(${YAML_LIB})
 
 
 find_package (PkgConfig REQUIRED)
