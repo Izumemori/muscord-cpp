@@ -11,6 +11,8 @@ It gathers music and player information from D-BUS/mpris2.
     - [Manual CMake](#manual-cmake)
   - [Configuring](#configuring)
     - [Example configuration](#example-configuration)
+- [Systemd](#systemd)
+  - [Systemd example service file](#systemd-example-service-file)
 - [Contributing](#contributing)
 - [License](#license)
 
@@ -54,17 +56,17 @@ Muscord will generate a `config.yml` if it cannot find one in `$HOME/muscord` or
 application_id: 385845405193207840
 disconnect_on_idle: true
 
-# one of the following is required
-# but only if disconnect_on_idle is true/on/yes
-## timeout in milliseconds
-idle_timeout_ms: 30000
-## or in seconds
+## one of the following is required
+## but only if disconnect_on_idle is true/on/yes
 ## if both are defined idle_timeout_ms has priority
+### timeout in milliseconds
+idle_timeout_ms: 30000
+### or in seconds
 # idle_timeout: 30
 
-# these are players that will be ignored by muscord
-# for example spotify, as it has way better integration already
-# names are Title Cased
+## these are players that will be ignored by muscord
+## for example spotify, as it has way better integration already
+## names are Title Cased
 player_blacklist: # optional
   - Spotify
 
@@ -84,14 +86,33 @@ default_player_icon: unknown
 min_log_level: info # possible: (trace, info, warning, error)
 
 # Formatting
-# each item can be omitted; artist will default to: "by {0}"
-# "{0}" and empty values will be ignored
+## each item can be omitted; artist will default to: "by {0}"
+## "{0}" and empty values will be ignored
 format: # optional
   title: 🎵 {0}
   artist: 👤 {0}
   album: 💿 {0}
   player_name: "Player: {0}"
 ```
+
+## Systemd
+
+This tool is designed to be run via systemd, to enable it create a `muscord.service` file in `~/.config/systemd/user/`  
+Then simply run `systemctl --user enable muscord.service` and it should start automatically on login
+
+### Systemd example service file
+
+```ini
+[Unit]
+Description=Muscord
+
+[Service]
+ExecStart=/usr/bin/muscord # Path to the executable
+
+[Install]
+WantedBy=default.target
+```
+
 
 ## Contributing
 

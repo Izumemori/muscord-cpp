@@ -6,10 +6,20 @@
 #include <string> 
 #include <map>
 #include <memory>
+#include <csignal>
 
 using namespace muscord;
 
+std::map<int, std::string> signal_map {
+    {SIGTERM, "SIGTERM"},
+    {SIGINT, "SIGINT"},
+    {SIGSEGV, "SIGSEGV"},
+    {SIGABRT, "SIGABRT"}
+};
+
 std::shared_ptr<MuscordConfig> config;
+std::unique_ptr<Muscord> muscord_client;
+bool should_exit = false;
 
 void log(const LogMessage& log) {
     if (log.severity < config->min_log_level) return;
@@ -17,8 +27,22 @@ void log(const LogMessage& log) {
     std::cout << "[" << severity_to_str(log.severity) << "] " << log.message << std::endl;
 }
 
+void handle_signal(int sig_num) {
+    LogMessage exit_message("Received signal '" + signal_map[sig_num] + "', exiting...", Severity::WARNING);
+    log(exit_message);
+    
+    muscord_client->stop();
+
+    exit(0);
+}
+
 int main()
 {
+    std::signal(SIGTERM, handle_signal);
+    std::signal(SIGINT, handle_signal);
+    std::signal(SIGSEGV, handle_signal);
+    std::signal(SIGABRT, handle_signal);
+
     std::string config_dir_base = get_config_dir() + "/muscord";
 
     config = std::make_shared<MuscordConfig>(config_dir_base + "/config.yml");
@@ -56,13 +80,11 @@ int main()
         presence->largeImageText = player_name.c_str();
     };
 
-    Muscord muscord(config, events);
+    muscord_client = std::make_unique<Muscord>(config, events);
     
-    muscord.run();
+    muscord_client->run();
 
-    std::cin.get();
-
-    muscord.stop();
+    std::promise<void>().get_future().wait(); // wait indefinitely
 
     return 0;
 }
