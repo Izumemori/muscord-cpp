@@ -1,4 +1,5 @@
 #include "muscord.h"
+#include "common.h"
 #include "../discord-rpc/include/discord_rpc.h"
 #include "muscord_rpc.h"
 #include "playerctl.h"
@@ -6,11 +7,6 @@
 #include <memory>
 
 namespace muscord {    
-    inline int64_t get_current_ms()
-    {
-        return std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now().time_since_epoch()).count();
-    }
-    
     std::function<void(const DiscordUser*)> ready_func;
     void ready_proxy(const DiscordUser* user) { if (ready_func) ready_func(user); }
 
@@ -20,9 +16,9 @@ namespace muscord {
     std::function<void(int, const char*)> errored_func;
     void errored_proxy(int error_code, const char* message) { if (errored_func) errored_func(error_code, message); }
    
-    Muscord::Muscord(std::unique_ptr<MuscordConfig>& config, std::unique_ptr<MuscordEvents>& handlers)
+    Muscord::Muscord(std::shared_ptr<MuscordConfig>& config, std::unique_ptr<MuscordEvents>& handlers)
     {
-        this->m_config = std::move(config);
+        this->m_config = config;
         this->m_handlers = std::move(handlers);
         this->m_discord_events = std::make_unique<DiscordEventHandlers>();
         ready_func = [this](const DiscordUser* user) {
@@ -119,7 +115,7 @@ namespace muscord {
         this->m_state.reset(mus_state);
         this->m_handlers->log(song);
         this->m_rpc->update_presence([this](DiscordRichPresence* presence) { 
-                this->m_handlers->play_state_change(*this->m_state, this->m_state->status, presence);
+                this->m_handlers->play_state_change(*this->m_state, presence);
             });
     }
 
@@ -135,7 +131,7 @@ namespace muscord {
         events->error = [this](std::string message){ this->on_errored(0, message.c_str()); };
         events->state_changed = [this](const PlayerState& state){ this->on_state_change(state); };
         events->log = [this](const LogMessage& message){ this->m_handlers->log(message); };
-        this->m_player = std::make_unique<Playerctl>(events);
+        this->m_player = std::make_unique<Playerctl>(events, this->m_config->blacklist);
     }
 
     bool MuscordState::equals(const MuscordState& other)

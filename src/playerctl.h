@@ -4,6 +4,7 @@
 #include "log_message.h"
 #include <future>
 #include <memory>
+#include <vector>
 
 extern "C" {
     #include <playerctl/playerctl.h>
@@ -34,11 +35,12 @@ namespace muscord {
     
     class Playerctl {
         public:
-            Playerctl(std::unique_ptr<PlayerctlEvents>& events);
+            Playerctl(std::unique_ptr<PlayerctlEvents>& events, std::vector<std::string>& blacklist);
             ~Playerctl();
         private:
             PlayerctlPlayerManager* m_manager;
             GMainLoop* m_main_loop;
+            std::vector<std::string> m_blacklist;
             std::future<void> m_time_updater;
             std::future<void> m_main_loop_future;
             std::unique_ptr<PlayerctlEvents> m_events;

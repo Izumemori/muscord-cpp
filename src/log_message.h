@@ -3,10 +3,10 @@
 
 namespace muscord {
     typedef enum Severity {
-        TRACE,
-        INFO,
-        WARNING,
-        ERROR
+        TRACE = 0,
+        INFO = 1,
+        WARNING = 2,
+        ERROR = 3    
     } Severity;
 
     typedef struct LogMessage {
