@@ -85,7 +85,12 @@ namespace muscord {
 
     void Muscord::on_state_change(const PlayerState& state)
     {
+        std::unique_ptr<MuscordState> mus_state = std::make_unique<MuscordState>(state);
+
+        mus_state->idle = state.title.empty() && state.artist.empty() && state.album.empty(); // Nothing is playing
+        
         if (!this->m_rpc->connected && state.status != PlayerStatus::PLAYING) return; // Don't bother with anything that's not playing when already disconnected
+        if (!this->m_state && state.status != PlayerStatus::PLAYING) return; // Don't display anything that's not playing at the start
 
         std::string status;
 
@@ -104,15 +109,10 @@ namespace muscord {
         std::string message = "[" + state.player_name + "] [" + status + "] " + state.artist + " - " + state.title;
         LogMessage song(message, Severity::INFO);
         
-        MuscordState* mus_state = new MuscordState(state);
-        
-        if (this->m_state && this->m_state->equals(*mus_state))
-        {
-            delete mus_state;
-            return;
-        }
+        if (this->m_state && this->m_state->equals(*mus_state)) return;
 
-        this->m_state.reset(mus_state);
+        this->m_state.reset();
+        this->m_state = std::move(mus_state);
         this->m_handlers->log(song);
         this->m_rpc->update_presence([this](DiscordRichPresence* presence) { 
                 this->m_handlers->play_state_change(*this->m_state, presence);

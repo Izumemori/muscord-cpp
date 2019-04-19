@@ -157,23 +157,29 @@ namespace muscord
         const char* temp;
 
         temp = playerctl_player_get_artist(player, &error);
-        if (!temp) return; 
-        state.artist = temp;
-        delete temp;
+        if (temp) {
+            state.artist = temp;
+            delete temp;
+        }
+        
         this->log_error(error);
         
         temp = playerctl_player_get_title(player, &error);
-        if (!temp) return;
-        state.title = temp;
-        delete temp;
+        if (temp) {
+            state.title = temp;
+            delete temp;
+        }
+
         this->log_error(error);
         
         temp = playerctl_player_get_album(player, &error);
-        if (!temp) return;
-        state.album = temp;
-        delete temp;
+        if (temp) {
+            state.album = temp;
+            delete temp;
+        }
         this->log_error(error);
         
+
         gint64 position = 0;        
         g_object_get(player, "position", &position, NULL);
         state.position = position;
@@ -199,6 +205,7 @@ namespace muscord
         gchar* name = NULL;
         g_object_get(player, "player_name", &name, NULL);
         state.player_name = to_title_case(name);
+        
         this->m_events->state_changed(state);
     }
 

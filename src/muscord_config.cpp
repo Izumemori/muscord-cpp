@@ -143,12 +143,18 @@ namespace muscord {
         return this->get_formatted_string("player_name", player_name);
     }
 
+    std::string MuscordConfig::get_idle_string() {
+        return this->get_formatted_string("idle"); 
+    }
+
     std::string MuscordConfig::get_formatted_string(const std::string& key, const std::string& content) {
         auto it = this->m_fmt_strings.find(key);
 
         if (it == this->m_fmt_strings.end()) return content; // Nothing to format
         if (it->second.empty() || it->second == "{0}") return content; // Empty content, so nothing to format either
-        
+       
+        if (content.empty()) return it->second; // No need to format
+
         std::string formatted = it->second;
         
         replace(formatted, "{0}", content);
@@ -185,8 +191,6 @@ namespace muscord {
         return it->second;            
     }
 
-
-
     YAML::Node MuscordConfig::load_or_create(const std::string& path) {
         struct stat buffer;
 
@@ -204,10 +208,8 @@ namespace muscord {
             new_config["play_state_icons"]["Stopped"] = "stop_white_small";
             new_config["default_player_icon"] = "unknown";
             new_config["min_log_level"] = Severity::INFO;
-            new_config["format"]["title"] = "{0}";
             new_config["format"]["artist"] = "by {0}";
-            new_config["format"]["album"] = "{0}";
-            new_config["format"]["player_name"] = "{0}";
+            new_config["format"]["idle"] = "Idle...";
 
             YAML::Emitter emitter;
             emitter << new_config;

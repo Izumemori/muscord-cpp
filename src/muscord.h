@@ -14,6 +14,7 @@ namespace muscord {
         std::string album;
         std::string player_name;
         uint64_t time;
+        bool idle; // set if nothing is playing
 
         MuscordState();
         MuscordState(const PlayerState& state);

@@ -86,13 +86,14 @@ default_player_icon: unknown
 min_log_level: info # possible: (trace, info, warning, error)
 
 # Formatting
-## each item can be omitted; artist will default to: "by {0}"
+## each item can be omitted; artist will default to: "by {0}"; idle will default to: "Idle..."
 ## "{0}" and empty values will be ignored
 format: # optional
   title: 🎵 {0}
   artist: 👤 {0}
   album: 💿 {0}
   player_name: "Player: {0}"
+  idle: Not playing anything
 ```
 
 ## Systemd

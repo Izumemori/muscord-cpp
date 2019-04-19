@@ -18,6 +18,7 @@ namespace muscord {
             std::string fmt_player_str(const std::string& player);
             std::string fmt_title_str(const std::string& title);
             std::string fmt_album_str(const std::string& album);
+            std::string get_idle_string();
             std::string get_play_state_icon(const PlayerStatus& play_status);
             std::string get_player_icon(const std::string& player_name);
             MuscordConfig(const std::string& path);
@@ -25,9 +26,9 @@ namespace muscord {
             YAML::Node m_config;
             std::map<std::string, std::string> m_play_state_icons;
             std::map<std::string, std::string> m_player_icons;
-            std::map<std::string, std::string> m_fmt_strings = {{"artist", "by {0}"}};
+            std::map<std::string, std::string> m_fmt_strings = {{"artist", "by {0}"}, {"idle", "Idle..."}};
             std::string m_default_icon;
-            std::string get_formatted_string(const std::string& key, const std::string& content);
+            std::string get_formatted_string(const std::string& key, const std::string& content = "");
             static YAML::Node load_or_create(const std::string& path);
     };
 }

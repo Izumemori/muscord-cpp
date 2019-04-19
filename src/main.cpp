@@ -62,22 +62,33 @@ int main()
     std::string player_icon;
     std::string play_state_icon;
     events->play_state_change = [&](const MuscordState& state, DiscordRichPresence* presence) {
+        // Player stuff
+        player_icon = config->get_player_icon(state.player_name);
+        play_state_icon = config->get_play_state_icon(state.status);
+        
+        presence->largeImageKey = player_icon.c_str();
+        presence->smallImageKey = play_state_icon.c_str();
+        
+        presence->largeImageText = player_name.c_str();
+        
+        if (state.idle)
+        {
+            artist = config->get_idle_string();
+            presence->state = artist.c_str();
+            return; // rest would be empty
+        }
+        
+        // Song stuff
         artist = config->fmt_artist_str(state.artist);
         title = config->fmt_title_str(state.title);
         player_name = config->fmt_player_str(state.player_name);
         album = config->fmt_album_str(state.album);
 
-        player_icon = config->get_player_icon(state.player_name);
-        play_state_icon = config->get_play_state_icon(state.status);
-
         presence->state = artist.c_str();
         presence->details = title.c_str();
 
-        presence->largeImageKey = player_icon.c_str();
-        presence->smallImageKey = play_state_icon.c_str();
 
         presence->smallImageText = album.c_str();
-        presence->largeImageText = player_name.c_str();
     };
 
     muscord_client = std::make_unique<Muscord>(config, events);
