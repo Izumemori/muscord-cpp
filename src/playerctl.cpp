@@ -43,19 +43,21 @@ namespace muscord
         this->m_time_updater = std::async(std::launch::async, [this]{
                     while (true)
                     {
+                        std::this_thread::sleep_for(std::chrono::seconds(1));
+                        
                         GList* players = NULL;
                         g_object_get(this->m_manager, "players", &players, NULL);
                         
                         auto l = g_list_first(players);
+                        
+                        if (this->m_time_updater_cancel_token->cancel) break;
                         
                         if (!l) continue;
                         
                         auto top_player = PLAYERCTL_PLAYER(l->data);
 
                         this->send_track_info(top_player);
-                        std::this_thread::sleep_for(std::chrono::seconds(1));
                         
-                        if (this->m_time_updater_cancel_token->cancel) break;
                     }
                 });
         
