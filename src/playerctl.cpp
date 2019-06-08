@@ -100,12 +100,10 @@ namespace muscord
         
         if (!player_class) return;
         if (name->name) {
-            LogMessage new_player_name("New Player appeared: " + std::string(name->name), Severity::INFO);
-            player_class->m_events->log(new_player_name);
+            player_class->log("New Player appeared: " + std::string(name->name), Severity::INFO);
             if (vector_contains(player_class->m_blacklist, to_title_case(name->name)))
             {
-                LogMessage player_ignored(std::string(name->name) + " is on the blacklist, ignored.", Severity::WARNING);
-                player_class->m_events->log(player_ignored);
+                player_class->log(std::string(name->name) + " is on the blacklist, ignored.", Severity::WARNING);
                 return;
             }
         }
@@ -130,8 +128,7 @@ namespace muscord
         g_object_get(player, "player_name", &name, NULL);
         
         if (name) {
-            LogMessage new_player_setup("Set up new player: " + std::string(name), Severity::INFO);
-            player_class->m_events->log(new_player_setup);
+            player_class->log("Set up new player: " + std::string(name), Severity::INFO);
         }
         
         player_class->init_managed_player(player);
@@ -146,8 +143,7 @@ namespace muscord
         
         if (!name) return;
         
-        LogMessage new_player_setup("Player vanished: " + std::string(name), Severity::INFO);
-        player_class->m_events->log(new_player_setup);
+        player_class->log("Player vanished: " + std::string(name), Severity::INFO);
     }
 
     void Playerctl::send_track_info(PlayerctlPlayer* player)

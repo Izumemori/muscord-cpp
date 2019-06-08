@@ -1,34 +1,14 @@
 #pragma once
 #include "muscord_rpc.h"
 #include "muscord_config.h"
+#include "muscord_events.h"
+#include "muscord_state.h"
 #include "playerctl.h"
 #include "../discord-rpc/include/discord_rpc.h"
 #include <vector>
 #include <memory>
 
 namespace muscord {
-    typedef struct MuscordState {
-        PlayerStatus status;
-        std::string artist;
-        std::string title;
-        std::string album;
-        std::string player_name;
-        uint64_t time;
-        bool idle; // set if nothing is playing
-
-        MuscordState();
-        MuscordState(const PlayerState& state);
-
-        bool equals(const MuscordState& other);
-    } MuscordState;
-
-    typedef struct MuscordEvents {
-        std::function<void(const LogMessage&)> log;
-        std::function<void(const MuscordState&, DiscordRichPresence*)> play_state_change;
-        std::function<void(const DiscordUser*)> ready; 
-    } MuscordEvents;
-
-
     class Muscord {
         public:
             Muscord(std::shared_ptr<MuscordConfig>& config, std::unique_ptr<MuscordEvents>& handlers);

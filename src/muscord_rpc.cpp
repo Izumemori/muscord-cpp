@@ -34,8 +34,7 @@ namespace muscord
         }
         else this->m_callback_token = std::make_unique<CancellationToken>();
         
-        LogMessage conn_message("Connecting...", Severity::INFO);
-        this->log(conn_message);
+        this->log("Connecting...", Severity::INFO);
         Discord_Initialize(this->m_application_id.c_str(), this->m_handlers.get(), 1, "");
         
         this->start_callback_checks();
@@ -44,13 +43,11 @@ namespace muscord
     void MuscordRpc::disconnect()
     {
         this->connected = false;
-        LogMessage disconn_message("Disconnecting...", Severity::INFO);
-        this->log(disconn_message);
+        this->log("Disconnecting...", Severity::INFO);
         this->stop_callback_checks();
         this->clear_presence();
         Discord_Shutdown();
-        LogMessage disconn_finish_message("Disconnected", Severity::INFO);
-        this->log(disconn_finish_message);
+        this->log("Disconnected", Severity::INFO);
     }
 
     void MuscordRpc::update_presence(const std::function<void (DiscordRichPresence*)>& f)
@@ -70,13 +67,11 @@ namespace muscord
 
     void MuscordRpc::start_callback_checks()
     {
-        this->m_callback_future = std::async(std::launch::async, [this]{
-            LogMessage ran_callbacks("Ran callbacks");
-                
+        this->m_callback_future = std::async(std::launch::async, [this]{             
             while(true)
             {
                 Discord_RunCallbacks();
-                this->log(ran_callbacks);
+                this->log("Ran callbacks");
                 std::this_thread::sleep_for(std::chrono::seconds(1));
                 if (this->m_callback_token->cancel) break;
             }

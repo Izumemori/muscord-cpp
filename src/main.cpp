@@ -48,7 +48,7 @@ int main()
     config = std::make_shared<MuscordConfig>(config_dir_base + "/config.yml");
 
     std::unique_ptr<MuscordEvents> events = std::make_unique<MuscordEvents>();
-    events->log = log;
+    events->log_received = log;
 
     events->ready = [](const DiscordUser* user) {
         LogMessage logged_in_msg("Logged in as " + std::string(user->username) + "#" + std::string(user->discriminator) + " (" + std::string(user->userId) + ")", Severity::INFO);

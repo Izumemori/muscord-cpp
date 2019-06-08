@@ -30,7 +30,7 @@ namespace muscord {
     typedef struct PlayerctlEvents {    
         std::function<void(const std::string&)> error;
         std::function<void(const PlayerState&)> state_changed;
-        std::function<void(const LogMessage&)> log;
+        std::function<void(const std::string&, const Severity)> log_received;
     } PlayerctlEvents;
     
     class Playerctl {
@@ -48,6 +48,9 @@ namespace muscord {
             void init_managed_player(PlayerctlPlayer* player);
             void send_track_info(PlayerctlPlayer* player);
             void log_error(GError*);
+            inline void log(const std::string& message, const Severity severity = Severity::TRACE) {
+                this->m_events->log_received(message, severity);
+            }
             static void on_play(PlayerctlPlayer* player, gpointer* data);
             static void on_name_appeared(PlayerctlPlayerManager* manager, PlayerctlPlayerName* name, gpointer* data);
             static void on_player_appeared(PlayerctlPlayerManager* manager, PlayerctlPlayer* player, gpointer* data);

@@ -35,7 +35,9 @@ namespace muscord {
         this->m_discord_events->errored = errored_proxy;
 
         this->m_rpc = std::make_unique<MuscordRpc>(this->m_config->application_id, this->m_discord_events);
-        this->m_rpc->log = this->m_handlers->log;
+        this->m_rpc->log_received = [this](const std::string& message, const Severity severity) {
+            this->m_handlers->log(message, severity);
+        };
 
         if (this->m_config->disconnect_on_idle) {
             this->m_idle_check_token = std::make_unique<CancellationToken>();
@@ -73,14 +75,12 @@ namespace muscord {
     
     void Muscord::on_errored(int error_code, const char* message)
     {
-        LogMessage error(message, Severity::ERROR);
-        this->m_handlers->log(error);
+        this->m_handlers->log(message, Severity::ERROR);
     }
     
     void Muscord::on_disconnected(int error_code, const char* message)
     {
-        LogMessage disconnect(message, Severity::INFO);
-        this->m_handlers->log(disconnect);
+        this->m_handlers->log(message, Severity::WARNING);
     }
 
     void Muscord::on_state_change(const PlayerState& state)
@@ -107,13 +107,12 @@ namespace muscord {
         }
         
         std::string message = "[" + state.player_name + "] [" + status + "] " + state.artist + " - " + state.title;
-        LogMessage song(message, Severity::INFO);
         
         if (this->m_state && this->m_state->equals(*mus_state)) return;
 
         this->m_state.reset();
         this->m_state = std::move(mus_state);
-        this->m_handlers->log(song);
+        this->m_handlers->log(message, Severity::INFO);
         this->m_rpc->update_presence([this](DiscordRichPresence* presence) { 
                 this->m_handlers->play_state_change(*this->m_state, presence);
             });
@@ -130,31 +129,7 @@ namespace muscord {
         std::unique_ptr<PlayerctlEvents> events = std::make_unique<PlayerctlEvents>();
         events->error = [this](std::string message){ this->on_errored(0, message.c_str()); };
         events->state_changed = [this](const PlayerState& state){ this->on_state_change(state); };
-        events->log = [this](const LogMessage& message){ this->m_handlers->log(message); };
+        events->log_received = [this](const std::string& message, const Severity severity){ this->m_handlers->log(message, severity); };
         this->m_player = std::make_unique<Playerctl>(events, this->m_config->blacklist);
     }
-
-    bool MuscordState::equals(const MuscordState& other)
-    {
-        return (this->artist == other.artist &&
-                this->title == other.title &&
-                this->album == other.album &&
-                this->player_name == other.player_name && 
-                this->status == other.status);
-    }
-
-    MuscordState::MuscordState()
-    {
-       this->time = get_current_ms(); 
-    }
-
-    MuscordState::MuscordState(const PlayerState& state) : MuscordState::MuscordState()
-    {
-        this->artist = state.artist;
-        this->title = state.title;
-        this->album = state.album;
-        this->player_name = state.player_name;
-        this->status = state.status;
-    }
-
 }

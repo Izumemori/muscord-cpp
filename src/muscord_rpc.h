@@ -18,7 +18,10 @@ namespace muscord
             void update_presence(const std::function<void (DiscordRichPresence*)>& func);
             void clear_presence();
             bool connected;
-            std::function<void(const LogMessage&)> log;
+            std::function<void(const std::string&, const Severity)> log_received;
+            inline void log(const std::string& msg, const Severity severity = Severity::TRACE) {
+                this->log_received(msg, severity);
+            }
             ~MuscordRpc();
         private:
             std::string m_application_id;
