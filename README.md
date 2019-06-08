@@ -74,11 +74,17 @@ player_blacklist: # optional
 player_icons: # optional
   Spotify: spotify_large
   Lollypop: lollypop_large_mini
+  Google-play-music-desktop-player: gpmdp_large
 
 play_state_icons:
   Playing: play_white_small
   Paused: pause_white_small
   Stopped: stop_white_small
+
+## this map allows you to change the player name if
+## it's not a very readable string by default
+player_names: #optional
+  Google-play-music-desktop-player: Google Play Music Desktop Player
 
 default_player_icon: unknown
 

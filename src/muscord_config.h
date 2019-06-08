@@ -24,6 +24,7 @@ namespace muscord {
             MuscordConfig(const std::string& path);
         private:
             YAML::Node m_config;
+            std::map<std::string, std::string> m_player_names;
             std::map<std::string, std::string> m_play_state_icons;
             std::map<std::string, std::string> m_player_icons;
             std::map<std::string, std::string> m_fmt_strings = {{"artist", "by {0}"}, {"idle", "Idle..."}};

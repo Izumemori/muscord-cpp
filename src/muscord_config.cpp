@@ -69,27 +69,20 @@ namespace muscord {
     }
 
     inline std::string node_type_to_str(const YAML::NodeType::value type) {
-        std::string str;
-
         switch (type) {
             case YAML::NodeType::Map:
-                str = "map";
-                break;
+                return "map";
             case YAML::NodeType::Null:
-                str = "null";
-                break;
+                return "null";
             case YAML::NodeType::Scalar:
-                str = "scalar";
-                break;
+                return "scalar";
             case YAML::NodeType::Sequence:
-                str = "sequence";
-                break;
+                return "sequence";
             case YAML::NodeType::Undefined:
-                str = "undefined";
-                break;
+                return "undefined";
+            default:
+                return "undefined";
         }
-
-        return str;
     }
 
     inline void throw_not_valid(const std::string& sequence_name, const YAML::NodeType::value field_type, const YAML::NodeType::value desired_type)
@@ -120,6 +113,9 @@ namespace muscord {
         if (this->m_config["player_icons"])
             this->m_player_icons = this->m_config["player_icons"].as<std::map<std::string, std::string>>();
         
+        if (this->m_config["player_names"])
+            this->m_player_names = this->m_config["player_names"].as<std::map<std::string, std::string>>();
+
         if (this->m_config["min_log_level"])
             this->min_log_level = this->m_config["min_log_level"].as<Severity>();
         
@@ -140,7 +136,14 @@ namespace muscord {
     }
 
     std::string MuscordConfig::fmt_player_str(const std::string& player_name) {
-        return this->get_formatted_string("player_name", player_name);
+        auto it = this->m_player_names.find(player_name);
+
+        std::string fmt_player_name = player_name;
+        
+        if (it != this->m_player_names.end() && !it->second.empty())
+            fmt_player_name = it->second;
+        
+        return this->get_formatted_string("player_name", fmt_player_name);
     }
 
     std::string MuscordConfig::get_idle_string() {
@@ -206,6 +209,8 @@ namespace muscord {
             new_config["play_state_icons"]["Playing"] = "play_white_small";
             new_config["play_state_icons"]["Paused"] = "pause_white_small";
             new_config["play_state_icons"]["Stopped"] = "stop_white_small";
+            new_config["player_names"]["Spotify"] = "Spotify Music";
+            new_config["player_names"]["Google-play-music-desktop-player"] = "Google Play Music Desktop Player";
             new_config["default_player_icon"] = "unknown";
             new_config["min_log_level"] = Severity::INFO;
             new_config["format"]["artist"] = "by {0}";
@@ -230,6 +235,7 @@ namespace muscord {
         std::map<std::string, YAML::NodeType::value> sequences = {
             {"player_blacklist", YAML::NodeType::Sequence},
             {"player_icons", YAML::NodeType::Map},
+            {"player_names", YAML::NodeType::Map},
             {"play_state_icons", YAML::NodeType::Map},
             {"format", YAML::NodeType::Map}
         };
