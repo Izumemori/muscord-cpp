@@ -4,7 +4,9 @@
 #include <sstream>
 #include <vector>
 #include <iterator>
-
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <dirent.h>
 
 void muscord::replace(std::string& str, const std::string& from, const std::string& to) {
     size_t start_pos = str.find(from);
@@ -41,6 +43,17 @@ std::string muscord::get_config_dir() {
     if (!user_home) throw std::runtime_error("Could not determine config location, ensure $HOME or $XDG_CONFIG_HOME are set");
 
     return std::string(user_home) + "/.config";
+}
+
+void muscord::ensure_config_dir_created(std::string& path) {
+    if (opendir(path.c_str())) return;
+
+    const int dir_err = mkdir(path.c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
+
+    if (dir_err != 0) {
+        std::cout << "Failed to create directory!" << std::endl;
+        exit(1);
+    }
 }
 
 std::string muscord::to_title_case(const std::string& input) {

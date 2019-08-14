@@ -44,7 +44,7 @@ int main()
     std::signal(SIGABRT, handle_signal);
 
     std::string config_dir_base = get_config_dir() + "/muscord";
-
+    ensure_config_dir_created(config_dir_base);
     config = std::make_shared<MuscordConfig>(config_dir_base + "/config.yml");
 
     std::unique_ptr<MuscordEvents> events = std::make_unique<MuscordEvents>();

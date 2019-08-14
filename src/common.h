@@ -27,6 +27,7 @@ namespace muscord {
     }
 
     std::string get_config_dir();
+    void ensure_config_dir_created(std::string& path);
     template<typename Tout> void split(const std::string& s, const char delimiter, Tout result); 
     std::string to_title_case(const std::string& input);
     void replace(std::string& str, const std::string& from, const std::string& to);
