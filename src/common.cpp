@@ -22,7 +22,7 @@ void muscord::split(const std::string& s, char delimiter, Tout result) {
     std::string item;
     while (std::getline(ss, item, delimiter)) {
         if (item.empty()) continue;
-
+        
         *(result++) = item;
     }
 }
@@ -46,7 +46,11 @@ std::string muscord::get_config_dir() {
 }
 
 void muscord::ensure_config_dir_created(std::string& path) {
-    if (opendir(path.c_str())) return;
+    DIR* dir = opendir(path.c_str());
+    if (dir) { 
+        closedir(dir);
+        return;
+    }
 
     const int dir_err = mkdir(path.c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
 

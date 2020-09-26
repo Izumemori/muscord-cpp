@@ -58,6 +58,17 @@ namespace muscord
         std::unique_ptr<DiscordRichPresence> rich_presence = std::make_unique<DiscordRichPresence>();
         f(rich_presence.get());
         Discord_UpdatePresence(rich_presence.get());
+
+        delete[] rich_presence->details;
+        delete[] rich_presence->largeImageKey;
+        delete[] rich_presence->largeImageText;
+        delete[] rich_presence->state;
+        delete[] rich_presence->smallImageKey;
+        delete[] rich_presence->smallImageText;
+        delete[] rich_presence->joinSecret;
+        delete[] rich_presence->matchSecret;
+        delete[] rich_presence->partyId;
+        delete[] rich_presence->spectateSecret;
     }
 
     void MuscordRpc::clear_presence()

@@ -8,6 +8,10 @@
 #include <vector>
 #include <algorithm>
 
+extern "C" {
+    #include <playerctl/playerctl.h>
+}
+
 namespace muscord
 {
     Playerctl::Playerctl(std::unique_ptr<PlayerctlEvents>& events, std::vector<std::string>& blacklist) {
