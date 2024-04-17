@@ -5,6 +5,7 @@
 #include "playerctl.h"
 #include <chrono>
 #include <memory>
+#include <thread>
 
 namespace muscord {    
     std::function<void(const DiscordUser*)> ready_func;
