@@ -34,7 +34,6 @@ std::string muscord::get_config_dir() {
     if (xdg_config_home)
     {
         config_home = xdg_config_home;
-        delete xdg_config_home;
         return config_home;
     }
 
